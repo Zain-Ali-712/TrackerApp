@@ -33,6 +33,9 @@ interface AppState {
   // Habit Actions
   toggleHabit: (habitKey: keyof Omit<DailyHabit, 'date' | 'score' | 'notes'>) => void;
   updateNotes: (notes: string) => void;
+  setDailyNotes: (notes: string) => void;
+  saveDailyNotes: () => void;
+  recalculateHabit: (date: string, baseHabit?: DailyHabit) => DailyHabit;
   
   // Nutrition Actions
   addMeal: (mealText: string) => Promise<void>;
@@ -123,8 +126,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSelectedDate: (date: string) => {
     if (!get().isDbInitialized) return;
 
-    const habit = DBService.getHabit(date);
+    const baseHabit = DBService.getHabit(date);
     const mealsList = DBService.getMeals(date);
+    
+    // Automatically recalculate to sync states on load
+    const habit = get().recalculateHabit(date, baseHabit);
+    DBService.saveHabit(habit);
     
     set({
       selectedDate: date,
@@ -157,52 +164,127 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     set({ caloriesGoal: calories, proteinGoal: protein });
 
-    // Recheck today's nutrition status under new goals
+    // Recalculate today's habit
     const activeDate = get().selectedDate;
-    const meals = DBService.getMeals(activeDate);
-    const totals = meals.reduce(
-      (acc, m) => ({ cal: acc.cal + m.calories, prot: acc.prot + m.protein }),
-      { cal: 0, prot: 0 }
-    );
-
-    const habit = { ...get().dailyHabit };
-    habit.calories_goal = totals.cal >= calories ? 1 : 0;
-    habit.protein_goal = totals.prot >= protein ? 1 : 0;
-
-    // Recalculate score
-    const totalHabits = [
-      habit.wakeup, habit.workout, habit.reading, habit.outreach,
-      habit.project_session_1, habit.project_session_2,
-      habit.calories_goal, habit.protein_goal, habit.sleep_8hr
-    ];
-    const completed = totalHabits.filter(h => h === 1).length;
-    habit.score = Math.round((completed / totalHabits.length) * 100);
-
-    DBService.saveHabit(habit);
-    set({ dailyHabit: habit });
+    const updated = get().recalculateHabit(activeDate);
+    DBService.saveHabit(updated);
+    set({ dailyHabit: updated });
   },
 
   toggleHabit: (habitKey: keyof Omit<DailyHabit, 'date' | 'score' | 'notes'>) => {
+    // Block auto-controlled checkboxes from manual toggle
+    if (
+      habitKey === 'outreach' ||
+      habitKey === 'project_implementation' ||
+      habitKey === 'nutrition' ||
+      habitKey === 'reading'
+    ) {
+      return;
+    }
+
     const habit = { ...get().dailyHabit };
     habit[habitKey] = habit[habitKey] === 1 ? 0 : 1;
 
-    // Calculate score
-    const totalHabits = [
-      habit.wakeup, habit.workout, habit.reading, habit.outreach,
-      habit.project_session_1, habit.project_session_2,
-      habit.calories_goal, habit.protein_goal, habit.sleep_8hr
-    ];
-    const completed = totalHabits.filter(h => h === 1).length;
-    habit.score = Math.round((completed / totalHabits.length) * 100);
-
-    DBService.saveHabit(habit);
-    set({ dailyHabit: habit });
+    // Recalculate and save
+    const updated = get().recalculateHabit(get().selectedDate, habit);
+    DBService.saveHabit(updated);
+    set({ dailyHabit: updated });
   },
 
   updateNotes: (notes: string) => {
     const habit = { ...get().dailyHabit, notes };
+    const updated = get().recalculateHabit(get().selectedDate, habit);
+    DBService.saveHabit(updated);
+    set({ dailyHabit: updated });
+  },
+
+  setDailyNotes: (notes: string) => {
+    const habit = { ...get().dailyHabit, notes };
+    const updated = get().recalculateHabit(get().selectedDate, habit);
+    set({ dailyHabit: updated });
+  },
+
+  saveDailyNotes: () => {
+    const habit = get().dailyHabit;
     DBService.saveHabit(habit);
-    set({ dailyHabit: habit });
+  },
+
+  recalculateHabit: (date: string, baseHabit?: DailyHabit) => {
+    const habit = baseHabit ? { ...baseHabit } : DBService.getHabit(date);
+    
+    // 1. Outreach Count from DB
+    const outreachEntries = DBService.getOutreachEntries();
+    const outreachForDay = outreachEntries.filter(e => e.date === date);
+    const outreachCount = outreachForDay.length;
+    
+    // Outreach checkbox checks if count >= 10
+    habit.outreach = outreachCount >= 10 ? 1 : 0;
+    
+    // 2. Project Hours from DB
+    const projectLogs = DBService.getAllProjectLogsRange(date, date);
+    const projectHours = projectLogs.reduce((acc, log) => acc + log.hours_worked, 0);
+    
+    // Project implementation checkbox checks if hours >= 3
+    habit.project_implementation = projectHours >= 3 ? 1 : 0;
+    
+    // 3. Nutrition Goals check
+    const meals = DBService.getMeals(date);
+    const totalCal = meals.reduce((acc, m) => acc + m.calories, 0);
+    const totalProt = meals.reduce((acc, m) => acc + m.protein, 0);
+    const calGoal = get().caloriesGoal;
+    const protGoal = get().proteinGoal;
+    
+    // Nutrition checkbox checks if both are met
+    habit.nutrition = (totalCal >= calGoal && totalProt >= protGoal) ? 1 : 0;
+    
+    // Keep legacy goals updated too so they don't break other screens
+    habit.calories_goal = totalCal >= calGoal ? 1 : 0;
+    habit.protein_goal = totalProt >= protGoal ? 1 : 0;
+    
+    // Keep legacy project session checkboxes updated as well
+    habit.project_session_1 = projectHours > 0 ? 1 : 0;
+    habit.project_session_2 = projectHours >= 4 ? 1 : 0;
+    
+    // 4. Reading/Writing based on journal word count (80+ words)
+    const notes = habit.notes || '';
+    const cleanNotes = notes.trim();
+    const wordCount = cleanNotes ? cleanNotes.split(/\s+/).length : 0;
+    habit.reading = wordCount >= 80 ? 1 : 0;
+    
+    // 5. Total Score calculation
+    let score = 0;
+    
+    // Wake up at 4am: 5%
+    if (habit.wakeup === 1) score += 5;
+    // Workout: 15%
+    if (habit.workout === 1) score += 15;
+    // Reading/Writing: 5%
+    if (habit.reading === 1) score += 5;
+    
+    // Outreach: 18% weightage. If count >= 10, scales from 50% to 100% of 18% for 10-20 entries.
+    if (outreachCount >= 10) {
+      const scalePercent = Math.min(100, 50 + (outreachCount - 10) * 5);
+      score += 18 * (scalePercent / 100);
+    }
+    
+    // Project implementation: 12%
+    if (habit.project_implementation === 1) score += 12;
+    // Research and Learning: 10%
+    if (habit.research_learning === 1) score += 10;
+    // Nutrition: 14%
+    if (habit.nutrition === 1) score += 14;
+    // Sleep: 6%
+    if (habit.sleep_8hr === 1) score += 6;
+    
+    // Prayers 5: 5%
+    if (habit.prayers === 1) score += 5;
+    // Doom/Bloom scrolling: 5%
+    if (habit.scrolling === 1) score += 5;
+    // Feeling improved: 5%
+    if (habit.feeling_improved === 1) score += 5;
+    
+    habit.score = Math.round(score);
+    return habit;
   },
 
   addMeal: async (mealText: string) => {
@@ -226,28 +308,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Reload meals
       const updatedMeals = DBService.getMeals(activeDate);
 
-      // Auto update Calorie/Protein Goals completed status
-      const totalCal = updatedMeals.reduce((sum, m) => sum + m.calories, 0);
-      const totalProt = updatedMeals.reduce((sum, m) => sum + m.protein, 0);
-
-      const habit = { ...get().dailyHabit };
-      habit.calories_goal = totalCal >= get().caloriesGoal ? 1 : 0;
-      habit.protein_goal = totalProt >= get().proteinGoal ? 1 : 0;
-
-      // Recalculate score
-      const totalHabits = [
-        habit.wakeup, habit.workout, habit.reading, habit.outreach,
-        habit.project_session_1, habit.project_session_2,
-        habit.calories_goal, habit.protein_goal, habit.sleep_8hr
-      ];
-      const completed = totalHabits.filter(h => h === 1).length;
-      habit.score = Math.round((completed / totalHabits.length) * 100);
-
-      DBService.saveHabit(habit);
+      // Auto update checklist status and score via central recalculateHabit
+      const updatedHabit = get().recalculateHabit(activeDate);
+      DBService.saveHabit(updatedHabit);
 
       set({
         meals: updatedMeals,
-        dailyHabit: habit,
+        dailyHabit: updatedHabit,
         isAnalyzingMeal: false,
       });
     } catch (e) {
@@ -262,28 +329,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const updatedMeals = DBService.getMeals(activeDate);
 
-    // Recheck goals achievements
-    const totalCal = updatedMeals.reduce((sum, m) => sum + m.calories, 0);
-    const totalProt = updatedMeals.reduce((sum, m) => sum + m.protein, 0);
-
-    const habit = { ...get().dailyHabit };
-    habit.calories_goal = totalCal >= get().caloriesGoal ? 1 : 0;
-    habit.protein_goal = totalProt >= get().proteinGoal ? 1 : 0;
-
-    // Recalculate score
-    const totalHabits = [
-      habit.wakeup, habit.workout, habit.reading, habit.outreach,
-      habit.project_session_1, habit.project_session_2,
-      habit.calories_goal, habit.protein_goal, habit.sleep_8hr
-    ];
-    const completed = totalHabits.filter(h => h === 1).length;
-    habit.score = Math.round((completed / totalHabits.length) * 100);
-
-    DBService.saveHabit(habit);
+    // Auto update checklist status and score via central recalculateHabit
+    const updatedHabit = get().recalculateHabit(activeDate);
+    DBService.saveHabit(updatedHabit);
 
     set({
       meals: updatedMeals,
-      dailyHabit: habit,
+      dailyHabit: updatedHabit,
     });
   },
 
@@ -294,25 +346,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       ...entry,
     });
 
-    // Automatically check "Outreach" habit if user logs an outreach entry today!
-    const habit = { ...get().dailyHabit };
-    if (habit.outreach === 0) {
-      habit.outreach = 1;
-      // Recalculate score
-      const totalHabits = [
-        habit.wakeup, habit.workout, habit.reading, habit.outreach,
-        habit.project_session_1, habit.project_session_2,
-        habit.calories_goal, habit.protein_goal, habit.sleep_8hr
-      ];
-      const completed = totalHabits.filter(h => h === 1).length;
-      habit.score = Math.round((completed / totalHabits.length) * 100);
-      DBService.saveHabit(habit);
-    }
+    // Automatically check Outreach and recalculate score
+    const updatedHabit = get().recalculateHabit(activeDate);
+    DBService.saveHabit(updatedHabit);
 
     const updatedOutreach = DBService.getOutreachEntries();
     set({
       outreachEntries: updatedOutreach,
-      dailyHabit: habit,
+      dailyHabit: updatedHabit,
     });
   },
 
@@ -336,36 +377,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       hours_worked: hours,
     });
 
-    // Auto complete "Project Work Session 1" or "Project Work Session 2" based on daily logged work hours!
-    // If hours > 0, check Session 1. If hours >= 4 (or another log exists), check Session 2.
-    const habit = { ...get().dailyHabit };
-    let scoreChanged = false;
-    
-    if (habit.project_session_1 === 0) {
-      habit.project_session_1 = 1;
-      scoreChanged = true;
-    } else if (habit.project_session_2 === 0) {
-      // If session 1 is already checked, check session 2 on second log or if logged hours are high
-      habit.project_session_2 = 1;
-      scoreChanged = true;
-    }
-
-    if (scoreChanged) {
-      // Recalculate score
-      const totalHabits = [
-        habit.wakeup, habit.workout, habit.reading, habit.outreach,
-        habit.project_session_1, habit.project_session_2,
-        habit.calories_goal, habit.protein_goal, habit.sleep_8hr
-      ];
-      const completed = totalHabits.filter(h => h === 1).length;
-      habit.score = Math.round((completed / totalHabits.length) * 100);
-      DBService.saveHabit(habit);
-    }
+    // Recalculate checklist and score
+    const updatedHabit = get().recalculateHabit(activeDate);
+    DBService.saveHabit(updatedHabit);
 
     const projectsList = DBService.getProjects();
     set({
       projects: projectsList,
-      dailyHabit: habit,
+      dailyHabit: updatedHabit,
     });
   },
 

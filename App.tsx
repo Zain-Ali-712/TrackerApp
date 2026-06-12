@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: THEME.colors.background,
-    paddingTop: Platform.OS === 'android' ? 36 : 0,
+    paddingTop: Platform.OS === 'android' ? 10 : 0,
     position: 'relative',
     overflow: 'hidden',
   },

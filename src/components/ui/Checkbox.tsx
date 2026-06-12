@@ -9,6 +9,8 @@ interface CheckboxProps {
   label?: string;
   sublabel?: string;
   typeColor?: string; // Optional custom color (e.g. blue for work, orange for health)
+  disabled?: boolean;
+  icon?: React.ReactNode;
 }
 
 export const Checkbox: React.FC<CheckboxProps> = ({
@@ -17,14 +19,16 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   label,
   sublabel,
   typeColor,
+  disabled,
+  icon,
 }) => {
   const activeColor = typeColor || THEME.colors.primary;
 
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={onPress}
-      style={styles.container}
+      activeOpacity={disabled ? 1 : 0.7}
+      onPress={disabled ? undefined : onPress}
+      style={[styles.container, disabled && { opacity: 0.55 }]}
     >
       <View
         style={[
@@ -42,6 +46,8 @@ export const Checkbox: React.FC<CheckboxProps> = ({
       >
         {checked && <Check size={14} color="#ffffff" strokeWidth={3.5} />}
       </View>
+      
+      {icon && <View style={styles.iconContainer}>{icon}</View>}
       
       {(label || sublabel) && (
         <View style={styles.textContainer}>
@@ -70,9 +76,9 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.xs,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: THEME.radius.sm,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
@@ -95,5 +101,10 @@ const styles = StyleSheet.create({
     color: THEME.colors.textMuted,
     fontSize: 11.5,
     marginTop: 2,
+  },
+  iconContainer: {
+    marginRight: THEME.spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

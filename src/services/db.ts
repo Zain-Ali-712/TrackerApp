@@ -45,6 +45,12 @@ export const DBService = {
           calories_goal INTEGER DEFAULT 0,
           protein_goal INTEGER DEFAULT 0,
           sleep_8hr INTEGER DEFAULT 0,
+          project_implementation INTEGER DEFAULT 0,
+          research_learning INTEGER DEFAULT 0,
+          nutrition INTEGER DEFAULT 0,
+          prayers INTEGER DEFAULT 0,
+          scrolling INTEGER DEFAULT 0,
+          feeling_improved INTEGER DEFAULT 0,
           score REAL DEFAULT 0,
           notes TEXT
         );
@@ -97,6 +103,23 @@ export const DBService = {
         );
       `);
 
+      // Add new columns to existing databases if they don't exist yet
+      const newCols = [
+        'project_implementation',
+        'research_learning',
+        'nutrition',
+        'prayers',
+        'scrolling',
+        'feeling_improved'
+      ];
+      for (const col of newCols) {
+        try {
+          nativeDb.execSync(`ALTER TABLE daily_habits ADD COLUMN ${col} INTEGER DEFAULT 0;`);
+        } catch (e) {
+          // Ignore error (e.g. column already exists)
+        }
+      }
+
       // Seed default categories for native sqlite if empty
       const countRes = nativeDb.getFirstSync('SELECT count(*) as count FROM outreach_categories') as { count: number } | null;
       if (countRes && countRes.count === 0) {
@@ -118,7 +141,10 @@ export const DBService = {
     if (Platform.OS === 'web') {
       const habits = JSON.parse(localStorage.getItem('db_daily_habits') || '{}');
       if (habits[date]) {
-        return habits[date];
+        return {
+          ...this.createEmptyHabit(date),
+          ...habits[date]
+        };
       }
       return this.createEmptyHabit(date);
     }
@@ -128,16 +154,22 @@ export const DBService = {
     if (row) {
       return {
         date: row.date,
-        wakeup: row.wakeup,
-        workout: row.workout,
-        reading: row.reading,
-        outreach: row.outreach,
-        project_session_1: row.project_session_1,
-        project_session_2: row.project_session_2,
-        calories_goal: row.calories_goal,
-        protein_goal: row.protein_goal,
-        sleep_8hr: row.sleep_8hr,
-        score: row.score,
+        wakeup: row.wakeup ?? 0,
+        workout: row.workout ?? 0,
+        reading: row.reading ?? 0,
+        outreach: row.outreach ?? 0,
+        project_session_1: row.project_session_1 ?? 0,
+        project_session_2: row.project_session_2 ?? 0,
+        calories_goal: row.calories_goal ?? 0,
+        protein_goal: row.protein_goal ?? 0,
+        sleep_8hr: row.sleep_8hr ?? 0,
+        project_implementation: row.project_implementation ?? 0,
+        research_learning: row.research_learning ?? 0,
+        nutrition: row.nutrition ?? 0,
+        prayers: row.prayers ?? 0,
+        scrolling: row.scrolling ?? 0,
+        feeling_improved: row.feeling_improved ?? 0,
+        score: row.score ?? 0,
         notes: row.notes || undefined,
       };
     }
@@ -157,8 +189,10 @@ export const DBService = {
       INSERT INTO daily_habits (
         date, wakeup, workout, reading, outreach, 
         project_session_1, project_session_2, 
-        calories_goal, protein_goal, sleep_8hr, score, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        calories_goal, protein_goal, sleep_8hr,
+        project_implementation, research_learning, nutrition,
+        prayers, scrolling, feeling_improved, score, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(date) DO UPDATE SET
         wakeup=excluded.wakeup,
         workout=excluded.workout,
@@ -169,12 +203,20 @@ export const DBService = {
         calories_goal=excluded.calories_goal,
         protein_goal=excluded.protein_goal,
         sleep_8hr=excluded.sleep_8hr,
+        project_implementation=excluded.project_implementation,
+        research_learning=excluded.research_learning,
+        nutrition=excluded.nutrition,
+        prayers=excluded.prayers,
+        scrolling=excluded.scrolling,
+        feeling_improved=excluded.feeling_improved,
         score=excluded.score,
         notes=excluded.notes
     `, 
       habit.date, habit.wakeup, habit.workout, habit.reading, habit.outreach,
       habit.project_session_1, habit.project_session_2,
-      habit.calories_goal, habit.protein_goal, habit.sleep_8hr, habit.score, habit.notes || null
+      habit.calories_goal, habit.protein_goal, habit.sleep_8hr,
+      habit.project_implementation, habit.research_learning, habit.nutrition,
+      habit.prayers, habit.scrolling, habit.feeling_improved, habit.score, habit.notes || null
     );
   },
 
@@ -188,7 +230,10 @@ export const DBService = {
       while (current <= end) {
         const dateStr = current.toISOString().split('T')[0];
         if (habits[dateStr]) {
-          result.push(habits[dateStr]);
+          result.push({
+            ...this.createEmptyHabit(dateStr),
+            ...habits[dateStr]
+          });
         } else {
           result.push(this.createEmptyHabit(dateStr));
         }
@@ -208,16 +253,22 @@ export const DBService = {
     for (const r of rows) {
       loadedMap.set(r.date, {
         date: r.date,
-        wakeup: r.wakeup,
-        workout: r.workout,
-        reading: r.reading,
-        outreach: r.outreach,
-        project_session_1: r.project_session_1,
-        project_session_2: r.project_session_2,
-        calories_goal: r.calories_goal,
-        protein_goal: r.protein_goal,
-        sleep_8hr: r.sleep_8hr,
-        score: r.score,
+        wakeup: r.wakeup ?? 0,
+        workout: r.workout ?? 0,
+        reading: r.reading ?? 0,
+        outreach: r.outreach ?? 0,
+        project_session_1: r.project_session_1 ?? 0,
+        project_session_2: r.project_session_2 ?? 0,
+        calories_goal: r.calories_goal ?? 0,
+        protein_goal: r.protein_goal ?? 0,
+        sleep_8hr: r.sleep_8hr ?? 0,
+        project_implementation: r.project_implementation ?? 0,
+        research_learning: r.research_learning ?? 0,
+        nutrition: r.nutrition ?? 0,
+        prayers: r.prayers ?? 0,
+        scrolling: r.scrolling ?? 0,
+        feeling_improved: r.feeling_improved ?? 0,
+        score: r.score ?? 0,
         notes: r.notes || undefined,
       });
     }
@@ -250,6 +301,12 @@ export const DBService = {
       calories_goal: 0,
       protein_goal: 0,
       sleep_8hr: 0,
+      project_implementation: 0,
+      research_learning: 0,
+      nutrition: 0,
+      prayers: 0,
+      scrolling: 0,
+      feeling_improved: 0,
       score: 0,
     };
   },
@@ -593,9 +650,13 @@ export const DBService = {
           for (const row of data.daily_habits) {
             nativeDb.runSync(`
               INSERT OR REPLACE INTO daily_habits (
-                date, wakeup, workout, reading, outreach, project_session_1, project_session_2, calories_goal, protein_goal, sleep_8hr, score, notes
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [row.date, row.wakeup, row.workout, row.reading, row.outreach, row.project_session_1, row.project_session_2, row.calories_goal, row.protein_goal, row.sleep_8hr, row.score, row.notes || null]);
+                date, wakeup, workout, reading, outreach, project_session_1, project_session_2, calories_goal, protein_goal, sleep_8hr,
+                project_implementation, research_learning, nutrition, prayers, scrolling, feeling_improved, score, notes
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              row.date, row.wakeup ?? 0, row.workout ?? 0, row.reading ?? 0, row.outreach ?? 0, row.project_session_1 ?? 0, row.project_session_2 ?? 0, row.calories_goal ?? 0, row.protein_goal ?? 0, row.sleep_8hr ?? 0,
+              row.project_implementation ?? 0, row.research_learning ?? 0, row.nutrition ?? 0, row.prayers ?? 0, row.scrolling ?? 0, row.feeling_improved ?? 0, row.score ?? 0, row.notes || null
+            ]);
           }
         } else if (data.daily_habits && typeof data.daily_habits === 'object') {
           // If stored as an object { YYYY-MM-DD: habit }
@@ -603,9 +664,13 @@ export const DBService = {
             const row = data.daily_habits[key];
             nativeDb.runSync(`
               INSERT OR REPLACE INTO daily_habits (
-                date, wakeup, workout, reading, outreach, project_session_1, project_session_2, calories_goal, protein_goal, sleep_8hr, score, notes
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [row.date, row.wakeup, row.workout, row.reading, row.outreach, row.project_session_1, row.project_session_2, row.calories_goal, row.protein_goal, row.sleep_8hr, row.score, row.notes || null]);
+                date, wakeup, workout, reading, outreach, project_session_1, project_session_2, calories_goal, protein_goal, sleep_8hr,
+                project_implementation, research_learning, nutrition, prayers, scrolling, feeling_improved, score, notes
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              row.date, row.wakeup ?? 0, row.workout ?? 0, row.reading ?? 0, row.outreach ?? 0, row.project_session_1 ?? 0, row.project_session_2 ?? 0, row.calories_goal ?? 0, row.protein_goal ?? 0, row.sleep_8hr ?? 0,
+              row.project_implementation ?? 0, row.research_learning ?? 0, row.nutrition ?? 0, row.prayers ?? 0, row.scrolling ?? 0, row.feeling_improved ?? 0, row.score ?? 0, row.notes || null
+            ]);
           }
         }
 

@@ -4,13 +4,21 @@ export interface DailyHabit {
   workout: number; // 0 or 1
   reading: number; // 0 or 1
   outreach: number; // 0 or 1
-  project_session_1: number; // 0 or 1
-  project_session_2: number; // 0 or 1
-  calories_goal: number; // 0 or 1
-  protein_goal: number; // 0 or 1
+  project_session_1: number; // legacy
+  project_session_2: number; // legacy
+  calories_goal: number; // legacy
+  protein_goal: number; // legacy
   sleep_8hr: number; // 0 or 1
   score: number; // percentage (0 to 100)
   notes?: string;
+  
+  // New checklist columns for refactored dashboard
+  project_implementation: number; // 0 or 1
+  research_learning: number; // 0 or 1
+  nutrition: number; // 0 or 1
+  prayers: number; // 0 or 1
+  scrolling: number; // 0 or 1
+  feeling_improved: number; // 0 or 1
 }
 
 export interface Meal {
