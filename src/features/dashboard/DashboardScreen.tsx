@@ -452,7 +452,7 @@ export const DashboardScreen: React.FC = () => {
       <View style={styles.welcomeContainer}>
         <View>
           <Text style={styles.welcomeSubText}>DISCIPLINE OPERATING SYSTEM</Text>
-          <Text style={styles.welcomeTitleText}>Welcome back, Champion</Text>
+          {Platform.OS === 'web' && <Text style={styles.welcomeTitleText}>Welcome back, Champion</Text>}
         </View>
         <View style={styles.avatarGlowBorder}>
           <View style={styles.avatarPlaceholder}>
@@ -805,6 +805,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: THEME.spacing.lg,
+    paddingTop: Platform.OS === 'web' ? THEME.spacing.lg : 44,
     paddingBottom: 120,
   },
   welcomeContainer: {
@@ -929,7 +930,7 @@ const styles = StyleSheet.create({
   },
   scoreCard: {
     padding: THEME.spacing.lg,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backgroundColor: 'rgba(30, 41, 59, 0.75)',
     borderColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -990,7 +991,7 @@ const styles = StyleSheet.create({
     marginTop: 0.5,
   },
   categoryCardPurple: {
-    backgroundColor: 'rgba(30, 41, 59, 0.35)',
+    backgroundColor: 'rgba(30, 41, 59, 0.70)',
     borderColor: 'rgba(139, 92, 246, 0.25)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -1003,7 +1004,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   categoryCardGreen: {
-    backgroundColor: 'rgba(30, 41, 59, 0.35)',
+    backgroundColor: 'rgba(30, 41, 59, 0.70)',
     borderColor: 'rgba(16, 185, 129, 0.25)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -1016,7 +1017,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   categoryCardYellow: {
-    backgroundColor: 'rgba(30, 41, 59, 0.35)',
+    backgroundColor: 'rgba(30, 41, 59, 0.70)',
     borderColor: 'rgba(245, 158, 11, 0.25)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
