@@ -279,8 +279,11 @@ export const AIService = {
       trimmedKey = trimmedKey.slice(1, -1).trim();
     }
 
-    // Route to Gemini API if the key begins with AIza
-    if (trimmedKey.startsWith('AIza')) {
+    // Route to Gemini API if the key is NOT an OpenAI key (OpenAI keys start with sk-)
+    const isOpenAIKey = trimmedKey.startsWith('sk-');
+    console.log(`[AIService] Key prefix: "${trimmedKey.substring(0, 6)}...", routing to: ${isOpenAIKey ? 'OpenAI' : 'Gemini'}`);
+
+    if (!isOpenAIKey) {
       try {
         const prompt = `Estimate the calories (kcal), protein (grams), and carbs (grams) for the following Pakistani/desi meal entry: "${mealText}".
 Respond ONLY with a valid JSON object. Do not include any markdown format blocks or prefix/suffix. Just return raw JSON.
@@ -453,8 +456,9 @@ ${JSON.stringify(currentMeals, null, 2)}
 
 Provide specific calorie and protein calculations for everything you suggest. Keep your responses highly conversational, friendly, encouraging, and clear, using bullet points and tables where appropriate. Act exactly like the shared ChatGPT Diet Coach. If Zain Ali asks for suggestions for the remaining day, calculate their current calorie and protein deficits and suggest exact meal options (e.g. eggs, shake, or pulao) to bridge the gap.`;
 
-    // Gemini API integration:
-    if (trimmedKey.startsWith('AIza')) {
+    // Gemini API integration (any key that is NOT OpenAI sk-):
+    const isOpenAIKey = trimmedKey.startsWith('sk-');
+    if (!isOpenAIKey) {
       try {
         const geminiContents = messages
           .filter(m => m.role !== 'system')
