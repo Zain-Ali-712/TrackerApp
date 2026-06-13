@@ -141,7 +141,7 @@ const chatLocally = (
   
   // 1. Remaining day diet query
   if (query.includes('remaining') || query.includes('left') || query.includes('what should i') || query.includes('diet plan') || query.includes('suggest me') || query.includes('eat next')) {
-    let advice = `Champion, you have logged **${totalCalories} kcal** and **${totalProtein}g protein** so far today. To hit your surplus goal of **${goals.caloriesGoal} kcal** and **${goals.proteinGoal}g protein**, you still need **${Math.max(0, calDeficit)} kcal** and **${Math.max(0, protDeficit)}g protein**.\n\n`;
+    let advice = `Zain Ali, you have logged **${totalCalories} kcal** and **${totalProtein}g protein** so far today. To hit your surplus goal of **${goals.caloriesGoal} kcal** and **${goals.proteinGoal}g protein**, you still need **${Math.max(0, calDeficit)} kcal** and **${Math.max(0, protDeficit)}g protein**.\n\n`;
     
     if (calDeficit <= 0 && protDeficit <= 0) {
       advice += `### 🎯 Goal Achieved!\nOutstanding discipline today! You have successfully achieved your daily calorie surplus and protein targets. No more heavy meals are required. Focus on recovery and getting 7-8 hours of sleep tonight!`;
@@ -224,7 +224,7 @@ const chatLocally = (
              ? `No meals logged today yet. Type in a meal in the 'Progress' tab to log it!` 
              : currentMeals.map((m, i) => `${i+1}. **${m.meal_text}** (~${m.calories} kcal, ${m.protein}g protein)`).join('\n')
            ) + `\n\n` +
-           `*Keep pushing, Champion! Every single day of consistency builds the foundation for strength and muscle.*`;
+           `*Keep pushing, Zain Ali! Every single day of consistency builds the foundation for strength and muscle.*`;
   }
   
   // 4. Mango / Banana shake query
@@ -242,7 +242,7 @@ const chatLocally = (
   }
   
   // Default general response
-  return `### 🦁 Salam, Champion!\n\n` +
+  return `### 🦁 Salam, Zain Ali!\n\n` +
          `I'm your **AI Diet Coach**, fully synchronized with your **Weight Gain & Muscle Building Plan**.\n\n` +
          `Here is what you have logged today so far:\n` +
          `- **Calories**: **${totalCalories} kcal** (Goal: ${goals.caloriesGoal} kcal)\n` +
@@ -261,6 +261,70 @@ export const AIService = {
       return estimateLocally(mealText);
     }
 
+    const trimmedKey = apiKey.trim();
+
+    // Route to Gemini API if the key begins with AIzaSy
+    if (trimmedKey.startsWith('AIzaSy')) {
+      try {
+        const prompt = `Estimate the calories (kcal), protein (grams), and carbs (grams) for the following Pakistani/desi meal entry: "${mealText}".
+Respond ONLY with a valid JSON object. Do not include any markdown format blocks or prefix/suffix. Just return raw JSON.
+Example output format:
+{
+  "calories": 450,
+  "protein": 18,
+  "carbs": 55,
+  "estimatedMealName": "2 Parathas with Daal Masoor"
+}
+
+Ensure your calculations are specific to Pakistani/desi items, e.g. a local paratha is around 300-350 calories, egg is 75-80, roti is 110-120, black chana salan is nutrient-dense, etc.`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${trimmedKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: prompt }]
+              }
+            ],
+            systemInstruction: {
+              parts: [{ text: 'You are an expert nutritionist specialized in Pakistani and South Asian/desi diets. You estimate calories, protein, and carbs from meal descriptions and return clean JSON response.' }]
+            },
+            generationConfig: {
+              responseMimeType: 'application/json'
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Gemini HTTP Error: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        const rawText = responseData.candidates[0].content.parts[0].text.trim();
+        const parsed = JSON.parse(rawText);
+
+        return {
+          calories: Number(parsed.calories) || 0,
+          protein: Number(parsed.protein) || 0,
+          carbs: Number(parsed.carbs) || 0,
+          estimatedMealName: parsed.estimatedMealName || mealText,
+          isMock: false
+        };
+      } catch (error) {
+        console.warn('Gemini meal service failed, falling back to local estimator:', error);
+        const local = estimateLocally(mealText);
+        return {
+          ...local,
+          estimatedMealName: `${local.estimatedMealName} (Est. Fallback - Gemini Error)`
+        };
+      }
+    }
+
+    // OpenAI implementation:
     try {
       const prompt = `Estimate the calories (kcal), protein (grams), and carbs (grams) for the following Pakistani/desi meal entry: "${mealText}".
 Respond ONLY with a valid JSON object. Do not include any markdown format blocks or prefix/suffix. Just return raw JSON.
@@ -278,7 +342,7 @@ Ensure your calculations are specific to Pakistani/desi items, e.g. a local para
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${trimmedKey}`,
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
@@ -338,15 +402,15 @@ Ensure your calculations are specific to Pakistani/desi items, e.g. a local para
       return { text: chatLocally(messages[messages.length - 1]?.content || '', currentMeals, goals) };
     }
 
-    try {
-      const systemPrompt = `You are an expert Desi Diet Coach and nutritionist.
-Your user Zain is on a weight gain, strength, and muscle-building routine.
+    const trimmedKey = apiKey.trim();
+    const systemPrompt = `You are an expert Desi Diet Coach and nutritionist.
+Your user Zain Ali is on a weight gain, strength, and muscle-building routine.
 Goals:
 - Calories target: ${goals.caloriesGoal} kcal (range: 2400-3000 kcal)
 - Protein target: ${goals.proteinGoal}g (minimum 80g, 90g is goal)
 - Carbs: nutrient dense.
 
-Zain's preferred foods are Desi/Pakistani:
+Zain Ali's preferred foods are Desi/Pakistani:
 - Homemade paratha: size matters! Zain's mom makes 26cm diameter parathas, which are around 350-450+ kcal, 6-8g protein. Roti is 140-190 kcal.
 - Omelet/fried/boiled eggs: 75-80 kcal, 6g protein each.
 - Daal chana (thick daal) or dry boiled daal: protein-rich, 15-22g protein per bowl.
@@ -354,16 +418,61 @@ Zain's preferred foods are Desi/Pakistani:
 - Lunch/Dinner: Chicken/Beef Pulao or Biryani, Matar Qeema, Beef Salan, Daal Chawal.
 - Snacks: Burfi, Anda Shami Burger (1 egg + 1 shami kabab = ~350-500 kcal, 15g protein).
 
-Today's logged meals for Zain:
+Today's logged meals for Zain Ali:
 ${JSON.stringify(currentMeals, null, 2)}
 
-Provide specific calorie and protein calculations for everything you suggest. Keep your responses highly conversational, friendly, encouraging, and clear, using bullet points and tables where appropriate. Act exactly like the shared ChatGPT Diet Coach. If the user asks for suggestions for the remaining day, calculate their current calorie and protein deficits and suggest exact meal options (e.g. eggs, shake, or pulao) to bridge the gap.`;
+Provide specific calorie and protein calculations for everything you suggest. Keep your responses highly conversational, friendly, encouraging, and clear, using bullet points and tables where appropriate. Act exactly like the shared ChatGPT Diet Coach. If Zain Ali asks for suggestions for the remaining day, calculate their current calorie and protein deficits and suggest exact meal options (e.g. eggs, shake, or pulao) to bridge the gap.`;
 
+    // Gemini API integration:
+    if (trimmedKey.startsWith('AIzaSy')) {
+      try {
+        const geminiContents = messages
+          .filter(m => m.role !== 'system')
+          .map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }]
+          }));
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${trimmedKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: geminiContents,
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            },
+            generationConfig: {
+              temperature: 0.7
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Gemini HTTP Error: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        const rawText = responseData.candidates[0].content.parts[0].text.trim();
+        return { text: rawText };
+      } catch (error: any) {
+        console.warn('Gemini chat completions failed, falling back to local chat estimator:', error);
+        const localReply = chatLocally(messages[messages.length - 1]?.content || '', currentMeals, goals);
+        return { 
+          text: localReply, 
+          error: error?.message || 'Error communicating with Gemini AI' 
+        };
+      }
+    }
+
+    // OpenAI implementation:
+    try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${trimmedKey}`,
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',

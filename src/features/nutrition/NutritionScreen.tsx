@@ -44,7 +44,7 @@ export const NutritionScreen: React.FC = () => {
     {
       id: 'welcome',
       sender: 'ai',
-      text: `🦁 **Salam, Champion!** I'm your **AI Diet Coach**.\n\nI have loaded your daily goals (2400-3000 kcal range, 90g protein goal) and today's logged meals.\n\nAsk me anything about your remaining day's diet, meal planning, or protein rating!`
+      text: `🦁 **Salam, Zain Ali!** I'm your **AI Diet Coach**.\n\nI have loaded your daily goals (2400-3000 kcal range, 90g protein goal) and today's logged meals.\n\nAsk me anything about your remaining day's diet, meal planning, or protein rating!`
     }
   ]);
   const [chatInput, setChatInput] = useState('');

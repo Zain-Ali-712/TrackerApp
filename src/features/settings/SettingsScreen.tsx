@@ -138,23 +138,23 @@ export const SettingsScreen: React.FC = () => {
         </Text>
       </Card>
 
-      {/* OpenAI API Key */}
+      {/* OpenAI/Gemini API Key */}
       <Text style={styles.sectionTitle}>AI Integration settings</Text>
       <Card style={styles.settingsCard}>
         <View style={styles.headerRow}>
           <Key size={14} color={THEME.colors.primary} style={{ marginRight: 6 }} />
-          <Text style={styles.settingsSubHeader}>OpenAI API Secret Key</Text>
+          <Text style={styles.settingsSubHeader}>OpenAI or Gemini API Secret Key</Text>
         </View>
         
         <Input
           value={apiKeyInput}
           onChangeText={setApiKeyInput}
-          placeholder="sk-proj-..."
+          placeholder="OpenAI Key (sk-...) or Gemini Key (AIzaSy...)"
           secureTextEntry
         />
 
         <Text style={styles.cardInfoText}>
-          Your key is saved locally in secure device storage and is never uploaded anywhere. It is used to query the gpt-4o-mini model for natural language meal analysis.
+          Your key is saved locally in secure device storage. You can paste either a standard OpenAI key or a free Gemini API key (which you can get for free at Google AI Studio: https://aistudio.google.com). The app will automatically detect the key type and route requests to the correct model.
         </Text>
       </Card>
 
