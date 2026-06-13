@@ -13,7 +13,7 @@ export const Card: React.FC<CardProps> = ({ children, style }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(30, 41, 59, 0.75)', // Translucent glass slate
+    backgroundColor: THEME.colors.surfaceCard, // Solid elevated card surface
     borderColor: 'rgba(255, 255, 255, 0.08)', // High-tech thin border
     borderWidth: 1.5,
     borderRadius: THEME.radius.lg,

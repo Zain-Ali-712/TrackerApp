@@ -430,7 +430,6 @@ export const NutritionScreen: React.FC = () => {
                 styles.mealCard,
                 {
                   borderColor: 'rgba(255, 255, 255, 0.05)',
-                  backgroundColor: 'rgba(30, 41, 59, 0.75)',
                 }
               ]}>
                 <View style={styles.mealInfoRow}>
@@ -673,7 +672,7 @@ const styles = StyleSheet.create({
   },
   ratingCard: {
     padding: THEME.spacing.md,
-    backgroundColor: 'rgba(30, 41, 59, 0.75)',
+    backgroundColor: THEME.colors.surfaceCard,
     borderWidth: 1.5,
     borderRadius: THEME.radius.xl,
     marginBottom: THEME.spacing.sm + 2,
@@ -717,7 +716,7 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     padding: THEME.spacing.md,
-    backgroundColor: 'rgba(30, 41, 59, 0.75)',
+    backgroundColor: THEME.colors.surfaceCard,
   },
   progressLabel: {
     color: THEME.colors.textMuted,
@@ -749,7 +748,7 @@ const styles = StyleSheet.create({
   },
   surplusCard: {
     padding: THEME.spacing.md,
-    backgroundColor: 'rgba(30, 41, 59, 0.75)',
+    backgroundColor: THEME.colors.surfaceCard,
     marginBottom: THEME.spacing.sm,
   },
   surplusRow: {
@@ -839,7 +838,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     padding: THEME.spacing.md,
     borderRadius: THEME.radius.md,
-    backgroundColor: 'rgba(30, 41, 59, 0.75)',
+    backgroundColor: THEME.colors.surfaceCard,
   },
   suggestionTitle: {
     color: THEME.colors.text,
@@ -856,7 +855,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(30, 41, 59, 0.75)',
+    backgroundColor: THEME.colors.surfaceCard,
   },
   emptyText: {
     color: THEME.colors.textMuted,

@@ -6,6 +6,16 @@ export interface AIResult {
   isMock: boolean;
 }
 
+const cleanJsonString = (text: string): string => {
+  let cleaned = text.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?/i, '');
+    cleaned = cleaned.replace(/```$/, '');
+    cleaned = cleaned.trim();
+  }
+  return cleaned;
+};
+
 // Simple offline keyword matcher for local fallback testing
 const estimateLocally = (mealText: string): AIResult => {
   const text = mealText.toLowerCase();
@@ -263,8 +273,8 @@ export const AIService = {
 
     const trimmedKey = apiKey.trim();
 
-    // Route to Gemini API if the key begins with AIzaSy
-    if (trimmedKey.startsWith('AIzaSy')) {
+    // Route to Gemini API if the key begins with AIza
+    if (trimmedKey.startsWith('AIza')) {
       try {
         const prompt = `Estimate the calories (kcal), protein (grams), and carbs (grams) for the following Pakistani/desi meal entry: "${mealText}".
 Respond ONLY with a valid JSON object. Do not include any markdown format blocks or prefix/suffix. Just return raw JSON.
@@ -305,7 +315,8 @@ Ensure your calculations are specific to Pakistani/desi items, e.g. a local para
 
         const responseData = await response.json();
         const rawText = responseData.candidates[0].content.parts[0].text.trim();
-        const parsed = JSON.parse(rawText);
+        const cleanedText = cleanJsonString(rawText);
+        const parsed = JSON.parse(cleanedText);
 
         return {
           calories: Number(parsed.calories) || 0,
@@ -424,7 +435,7 @@ ${JSON.stringify(currentMeals, null, 2)}
 Provide specific calorie and protein calculations for everything you suggest. Keep your responses highly conversational, friendly, encouraging, and clear, using bullet points and tables where appropriate. Act exactly like the shared ChatGPT Diet Coach. If Zain Ali asks for suggestions for the remaining day, calculate their current calorie and protein deficits and suggest exact meal options (e.g. eggs, shake, or pulao) to bridge the gap.`;
 
     // Gemini API integration:
-    if (trimmedKey.startsWith('AIzaSy')) {
+    if (trimmedKey.startsWith('AIza')) {
       try {
         const geminiContents = messages
           .filter(m => m.role !== 'system')

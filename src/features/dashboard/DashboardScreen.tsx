@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
   },
   scoreCard: {
     padding: THEME.spacing.lg,
-    backgroundColor: 'rgba(30, 41, 59, 0.75)',
+    backgroundColor: THEME.colors.surfaceCard,
     borderColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -991,7 +991,7 @@ const styles = StyleSheet.create({
     marginTop: 0.5,
   },
   categoryCardPurple: {
-    backgroundColor: 'rgba(30, 41, 59, 0.70)',
+    backgroundColor: THEME.colors.surfaceCard,
     borderColor: 'rgba(139, 92, 246, 0.25)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -1004,7 +1004,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   categoryCardGreen: {
-    backgroundColor: 'rgba(30, 41, 59, 0.70)',
+    backgroundColor: THEME.colors.surfaceCard,
     borderColor: 'rgba(16, 185, 129, 0.25)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -1017,7 +1017,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   categoryCardYellow: {
-    backgroundColor: 'rgba(30, 41, 59, 0.70)',
+    backgroundColor: THEME.colors.surfaceCard,
     borderColor: 'rgba(245, 158, 11, 0.25)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -1082,7 +1082,7 @@ const styles = StyleSheet.create({
   graphCard: {
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.md,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backgroundColor: THEME.colors.surface,
     borderColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -1095,7 +1095,7 @@ const styles = StyleSheet.create({
   },
   journalCard: {
     padding: THEME.spacing.md,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backgroundColor: THEME.colors.surface,
     borderColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1.2,
     borderRadius: THEME.radius.xl,
@@ -1156,7 +1156,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   bottomHistoryCard: {
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backgroundColor: THEME.colors.surface,
     borderRadius: THEME.radius.xl,
     borderWidth: 1.2,
     borderColor: 'rgba(255, 255, 255, 0.06)',
