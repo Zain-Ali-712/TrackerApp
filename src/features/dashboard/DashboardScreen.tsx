@@ -452,7 +452,7 @@ export const DashboardScreen: React.FC = () => {
       <View style={styles.welcomeContainer}>
         <View>
           <Text style={styles.welcomeSubText}>DISCIPLINE OPERATING SYSTEM</Text>
-          {Platform.OS === 'web' && <Text style={styles.welcomeTitleText}>Welcome back, Zain Ali</Text>}
+          <Text style={styles.welcomeTitleText}>Welcome back, Zain Ali</Text>
         </View>
         <View style={styles.avatarGlowBorder}>
           <View style={styles.avatarPlaceholder}>

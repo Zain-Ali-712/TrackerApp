@@ -271,7 +271,13 @@ export const AIService = {
       return estimateLocally(mealText);
     }
 
-    const trimmedKey = apiKey.trim();
+    let trimmedKey = apiKey.trim();
+    if (trimmedKey.startsWith('"') && trimmedKey.endsWith('"')) {
+      trimmedKey = trimmedKey.slice(1, -1).trim();
+    }
+    if (trimmedKey.startsWith("'") && trimmedKey.endsWith("'")) {
+      trimmedKey = trimmedKey.slice(1, -1).trim();
+    }
 
     // Route to Gemini API if the key begins with AIza
     if (trimmedKey.startsWith('AIza')) {
@@ -310,7 +316,13 @@ Ensure your calculations are specific to Pakistani/desi items, e.g. a local para
         });
 
         if (!response.ok) {
-          throw new Error(`Gemini HTTP Error: ${response.status}`);
+          const errText = await response.text();
+          let errDetail = errText;
+          try {
+            const parsedErr = JSON.parse(errText);
+            errDetail = parsedErr.error?.message || errText;
+          } catch (e) {}
+          throw new Error(`Gemini HTTP Error: ${response.status} - ${errDetail}`);
         }
 
         const responseData = await response.json();
@@ -325,12 +337,13 @@ Ensure your calculations are specific to Pakistani/desi items, e.g. a local para
           estimatedMealName: parsed.estimatedMealName || mealText,
           isMock: false
         };
-      } catch (error) {
+      } catch (error: any) {
         console.warn('Gemini meal service failed, falling back to local estimator:', error);
         const local = estimateLocally(mealText);
+        const errMsg = error?.message || String(error);
         return {
           ...local,
-          estimatedMealName: `${local.estimatedMealName} (Est. Fallback - Gemini Error)`
+          estimatedMealName: `${local.estimatedMealName} (Est. Fallback - Gemini Error: ${errMsg.substring(0, 80)})`
         };
       }
     }
@@ -413,7 +426,13 @@ Ensure your calculations are specific to Pakistani/desi items, e.g. a local para
       return { text: chatLocally(messages[messages.length - 1]?.content || '', currentMeals, goals) };
     }
 
-    const trimmedKey = apiKey.trim();
+    let trimmedKey = apiKey.trim();
+    if (trimmedKey.startsWith('"') && trimmedKey.endsWith('"')) {
+      trimmedKey = trimmedKey.slice(1, -1).trim();
+    }
+    if (trimmedKey.startsWith("'") && trimmedKey.endsWith("'")) {
+      trimmedKey = trimmedKey.slice(1, -1).trim();
+    }
     const systemPrompt = `You are an expert Desi Diet Coach and nutritionist.
 Your user Zain Ali is on a weight gain, strength, and muscle-building routine.
 Goals:
@@ -461,7 +480,13 @@ Provide specific calorie and protein calculations for everything you suggest. Ke
         });
 
         if (!response.ok) {
-          throw new Error(`Gemini HTTP Error: ${response.status}`);
+          const errText = await response.text();
+          let errDetail = errText;
+          try {
+            const parsedErr = JSON.parse(errText);
+            errDetail = parsedErr.error?.message || errText;
+          } catch (e) {}
+          throw new Error(`Gemini HTTP Error: ${response.status} - ${errDetail}`);
         }
 
         const responseData = await response.json();
