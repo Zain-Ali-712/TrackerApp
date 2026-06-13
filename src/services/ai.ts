@@ -297,7 +297,7 @@ Example output format:
 
 Ensure your calculations are specific to Pakistani/desi items, e.g. a local paratha is around 300-350 calories, egg is 75-80, roti is 110-120, black chana salan is nutrient-dense, etc.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${trimmedKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${trimmedKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -467,7 +467,7 @@ Provide specific calorie and protein calculations for everything you suggest. Ke
             parts: [{ text: m.content }]
           }));
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${trimmedKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${trimmedKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
